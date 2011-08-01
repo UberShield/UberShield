@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using Microsoft.SPOT;
 using Microsoft.SPOT.Hardware;
 
@@ -6,215 +6,317 @@ namespace UberShield.Cores
 {
     public class GpioPwm
     {
-        public enum Cmd :byte
+        public enum Command : byte
         {
-            CmdRamRead=0,
-            CmdRamWrite=1,
-            CmdSetGreenLed=2,
-            CmdSetRedLed=3,
-            CmdGetButton=4,
-            CmdPwmRun=5,
-            CmdSetTerminate=6,
-            CmdGetTerminate=7,
-            CmdSetPinInput=8,
-            CmdSetPinOutput=9,
-            CmdSetPinPwm=10,
-            CmdSetPinInvertedPwm=11,
-            CmdGetPinMode=12,
-            CmdSetPinStateLow=13,
-            CmdSetPinStateHigh=14,
-            CmdGetPinStateLow=17,
-            CmdGetPinStateHigh=18,
-            CmdGetPinInputLow=19,
-            CmdGetPinInputHigh=20,
-            CmdGetCoreId=255
+            RamRead = 0,
+            RamWrite = 1,
+            SetGreenLed = 2,
+            SetRedLed = 3,
+            GetButton = 4,
+            PwmRun = 5,
+            SetTerminate = 6,
+            GetTerminate = 7,
+            SetPinInput = 8,
+            SetPinOutput = 9,
+            CmdSetPinPwm = 10,
+            SetPinInvertedPwm = 11,
+            GetPinMode = 12,
+            SetPinStateLow = 13,
+            SetPinStateHigh = 14,
+            GetPinStateLow = 17,
+            GetPinStateHigh = 18,
+            GetPinInputLow = 19,
+            GetPinInputHigh = 20,
+            GetCoreId = 255
         };
-        public enum PinType :byte
+        public enum PinType : byte
         {
-            PinInput=0,
-            PinOutput=1,
-            PinPwm=2,
-            PinInvertedPwm=3
+            PinInput = 0,
+            PinOutput = 1,
+            PinPwm = 2,
+            PinInvertedPwm = 3
         };
-        public enum PwmParam :byte
+        public enum PwmParameter : byte
         {
-            PwmRise=0,
-            PwmFall=1,
-            PwmPeriod=2
+            PwmRise = 0,
+            PwmFall = 1,
+            PwmPeriod = 2
+        };
+        public enum PinGroup : byte
+        {
+            Lower = 0,
+            Upper = 1,
         };
 
-        SPI Spi;
+        SPI spi;
 
-        public GpioPwm(SPI spiInt)
+        public GpioPwm(SPI spi)
         {
-            Spi = spiInt;
+            this.spi = spi;
             if (!IsGpioPwmCore())
             {
-                throw(new SystemException("Tried to instantiate a GpioPwm class, but no GPIO/PWM core running on UberShield."));
+                throw (new SystemException("Tried to instantiate a GpioPwm class, but no GPIO/PWM core running on UberShield."));
             }
+        }
+
+        public bool GetButton()
+        {
+            byte[] txBuffer = new byte[6];
+            byte[] rxBuffer = new byte[6];
+            bool buttonState;
+            txBuffer[0] = (byte)Command.GetButton;
+            txBuffer[1] = 0x00;
+            txBuffer[2] = 0x00;
+            txBuffer[3] = 0x00;
+            txBuffer[4] = 0x00;
+            txBuffer[5] = 0x00;
+            spi.WriteRead(txBuffer, rxBuffer);
+            buttonState = (rxBuffer[5] == 0x01) ? true : false;
+            return buttonState;
         }
 
         public bool IsGpioPwmCore()
         {
-            var TxBuffer = new byte[6];
-            var RxBuffer = new byte[6];
-            TxBuffer[0] = (byte)Cmd.CmdGetCoreId;
-            TxBuffer[1] = 0x00;
-            TxBuffer[2] = 0x00;
-            TxBuffer[3] = 0x00;
-            TxBuffer[4] = 0x00;
-            TxBuffer[5] = 0x00;
-            Spi.WriteRead(TxBuffer, RxBuffer);
-            if ((RxBuffer[2] == 0x00) & (RxBuffer[3] == 0x01))
+            byte[] txBuffer = new byte[6];
+            byte[] rxBuffer = new byte[6];
+            txBuffer[0] = (byte)Command.GetCoreId;
+            txBuffer[1] = 0x00;
+            txBuffer[2] = 0x00;
+            txBuffer[3] = 0x00;
+            txBuffer[4] = 0x00;
+            txBuffer[5] = 0x00;
+            spi.WriteRead(txBuffer, rxBuffer);
+            if ((rxBuffer[2] == 0x00) & (rxBuffer[3] == 0x01))
             {
-                return(true);
+                return (true);
             }
             else
             {
-                return(false);
+                return (false);
             }
         }
 
         public void SetGreenLED(bool state)
         {
-            byte[] WriteBuffer = new byte[2];
-            WriteBuffer[0] = (byte)Cmd.CmdSetGreenLed; //Command
-            WriteBuffer[1] = state?(byte)0x01:(byte)0x00; //Operand
-            Spi.Write(WriteBuffer);
+            byte[] txBuffer = new byte[2];
+            txBuffer[0] = (byte)Command.SetGreenLed; //Command
+            txBuffer[1] = state ? (byte)0x01 : (byte)0x00; //Operand
+            spi.Write(txBuffer);
         }
 
         public void SetRedLED(bool state)
         {
-            byte[] WriteBuffer = new byte[2];
-            WriteBuffer[0] = (byte)Cmd.CmdSetRedLed; //Command
-            WriteBuffer[1] = state ? (byte)0x01 : (byte)0x00; //Operand
-            Spi.Write(WriteBuffer);
+            byte[] txBuffer = new byte[2];
+            txBuffer[0] = (byte)Command.SetRedLed; //Command
+            txBuffer[1] = state ? (byte)0x01 : (byte)0x00; //Operand
+            spi.Write(txBuffer);
         }
 
         public void SetPinType(byte pin, PinType type)
         {
-            byte[] WriteBuffer = new byte[2];
+            byte[] txBuffer = new byte[2];
             switch (type)
             {
                 case PinType.PinInput:
-                    WriteBuffer[0] = (byte)Cmd.CmdSetPinInput;
+                    txBuffer[0] = (byte)Command.SetPinInput;
                     break;
                 case PinType.PinOutput:
-                    WriteBuffer[0] = (byte)Cmd.CmdSetPinOutput;
+                    txBuffer[0] = (byte)Command.SetPinOutput;
                     break;
                 case PinType.PinPwm:
-                    WriteBuffer[0] = (byte)Cmd.CmdSetPinPwm;
+                    txBuffer[0] = (byte)Command.CmdSetPinPwm;
                     break;
                 case PinType.PinInvertedPwm:
-                    WriteBuffer[0] = (byte)Cmd.CmdSetPinInvertedPwm;
+                    txBuffer[0] = (byte)Command.SetPinInvertedPwm;
                     break;
                 default:
-                    throw(new SystemException("SetPinType called with invalid pin type."));
-                    break;
-            }
-            WriteBuffer[1] = pin; //Operand
-            Spi.Write(WriteBuffer);
+                    throw (new SystemException("SetPinType called with invalid pin type."));
+             }
+            txBuffer[1] = pin; //Operand
+            spi.Write(txBuffer);
         }
 
         public void PwmGo()
         {
-            byte[] WriteBuffer = new byte[2];
-            WriteBuffer[0] = (byte)Cmd.CmdPwmRun; //Command
-            WriteBuffer[1] = 0x01; //Operand
-            Spi.Write(WriteBuffer);
+            byte[] txBuffer = new byte[2];
+            txBuffer[0] = (byte)Command.PwmRun; //Command
+            txBuffer[1] = 0x01; //Operand
+            spi.Write(txBuffer);
         }
 
         public void PwmStop()
         {
-            byte[] WriteBuffer = new byte[2];
-            WriteBuffer[0] = (byte)Cmd.CmdPwmRun; //Command
-            WriteBuffer[1] = 0x00; //Operand
-            Spi.Write(WriteBuffer);
+            byte[] txBuffer = new byte[2];
+            txBuffer[0] = (byte)Command.PwmRun; //Command
+            txBuffer[1] = 0x00; //Operand
+            spi.Write(txBuffer);
         }
 
-        public void SetPinState(byte pin, bool state)
+        public void SetPin(byte pin, bool state)
         {
-            byte[] WriteBuffer = new byte[6];
-            if (pin < 32)
+            PinGroup group;
+            uint groupState;
+            byte maskedPin = (byte)(pin & 31); //The bottom six bits of the pin number
+            group = (pin >= 32) ? PinGroup.Upper : PinGroup.Lower; // Establish which group the pin is in
+            groupState = GetGroupPinState(group); //Read the present state
+            if (state) //Modify the state
             {
-                if (state)
-                {
-                    WriteBuffer[0] = 0x0D;
-                }
-                else
-                {
-                    WriteBuffer[0] = 0x0F;
-                }
+                groupState |= (uint)(0x01 << maskedPin);
             }
             else
             {
-                if (state)
-                {
-                    WriteBuffer[0] = 0x0E;
-                }
-                else
-                {
-                    WriteBuffer[0] = 0x10;
-                }
+                groupState &= ~(uint)(0x01 << maskedPin);
             }
-            WriteBuffer[1] = 0x00; //Operand
-            int Data = 0x01 << pin;
-            WriteBuffer[2] = (byte)(Data >> 24 & 0xFF);
-            WriteBuffer[3] = (byte)(Data >> 16 & 0xFF);
-            WriteBuffer[4] = (byte)(Data >> 8 & 0xFF);
-            WriteBuffer[5] = (byte)(Data & 0xFF);
-            Spi.Write(WriteBuffer);
+            SetGroupPin(group, groupState); //Write the state
         }
 
-        public void SetPwmParameter(byte channel, PwmParam param, uint data)
+        public bool GetPinState(byte pin)
         {
-            byte address = (byte)((channel << 2) + (byte)param);
+            PinGroup group;
+            uint groupState;
+            bool state;
+            byte maskedPin = (byte)(pin & 31); //The bottom six bits of the pin number
+            group = (pin >= 32) ? PinGroup.Upper : PinGroup.Lower; // Establish which group the pin is in
+            groupState = GetGroupPinState(group);
+            groupState = (uint)(groupState&(0x01<<maskedPin));
+            state = (groupState>0) ? true : false;
+            return state;
+        }
+            
+        public void SetGroupPin(PinGroup group, uint state)
+        {
+            byte readCommand;
+            uint RetVal;
+            var txBuffer = new byte[6];
+            var rxBuffer = new byte[6];
+            if (group==PinGroup.Lower)
+            {
+                readCommand = (byte)Command.SetPinStateLow;
+            }
+            else
+            {
+                readCommand = (byte)Command.SetPinStateHigh;
+            }
+            txBuffer[0] = readCommand;
+            txBuffer[2] = (byte)(state >> 24 & 0xFF);
+            txBuffer[3] = (byte)(state >> 16 & 0xFF);
+            txBuffer[4] = (byte)(state >> 8 & 0xFF);
+            txBuffer[5] = (byte)(state & 0xFF);
+            spi.Write(txBuffer);
+        }
+
+        public uint GetGroupPinState(PinGroup group)
+        {
+            byte readCommand;
+            uint RetVal;
+            var txBuffer = new byte[6];
+            var rxBuffer = new byte[6];
+            if (group==PinGroup.Lower)
+            {
+                readCommand = (byte)Command.GetPinStateLow;
+            }
+            else
+            {
+                readCommand = (byte)Command.GetPinStateHigh;
+            }
+            txBuffer[0] = readCommand;
+            txBuffer[1] = 0x00;
+            txBuffer[2] = 0x00;
+            txBuffer[3] = 0x00;
+            txBuffer[4] = 0x00;
+            txBuffer[5] = 0x00;
+            spi.WriteRead(txBuffer, rxBuffer);
+            RetVal = (uint)((rxBuffer[2] << 24) + (rxBuffer[3] << 16) + (rxBuffer[4] << 8) + (rxBuffer[5]));
+            return RetVal;
+        }
+
+        public bool GetPin(byte pin)
+        {
+            PinGroup group;
+            uint groupState;
+            bool state;
+            byte maskedPin = (byte)(pin & 31); //The bottom six bits of the pin number
+            group = (pin >= 32) ? PinGroup.Upper : PinGroup.Lower; // Establish which group the pin is in
+            groupState = GetGroupPin(group);
+            groupState = (uint)(groupState & (0x01 << maskedPin));
+            state = (groupState > 0) ? true : false;
+            return state;
+        }
+
+        public uint GetGroupPin(PinGroup group)
+        {
+            byte readCommand;
+            uint RetVal;
+            var txBuffer = new byte[6];
+            var rxBuffer = new byte[6];
+            if (group == PinGroup.Lower)
+            {
+                readCommand = (byte)Command.GetPinInputLow;
+            }
+            else
+            {
+                readCommand = (byte)Command.GetPinInputHigh;
+            }
+            txBuffer[0] = readCommand;
+            txBuffer[1] = 0x00;
+            txBuffer[2] = 0x00;
+            txBuffer[3] = 0x00;
+            txBuffer[4] = 0x00;
+            txBuffer[5] = 0x00;
+            spi.WriteRead(txBuffer, rxBuffer);
+            RetVal = (uint)((rxBuffer[2] << 24) + (rxBuffer[3] << 16) + (rxBuffer[4] << 8) + (rxBuffer[5]));
+            return RetVal;
+        }
+
+        public void SetPwmParameter(byte channel, PwmParameter parameter, uint data)
+        {
+            byte address = (byte)((channel << 2) + (byte)parameter);
             SetMemory(address, data);
         }
 
-        public uint GetPwmParameter(byte channel, PwmParam param)
+        public uint GetPwmParameter(byte channel, PwmParameter parameter)
         {
-            byte address = (byte)((channel << 2) + (byte)param);
+            byte address = (byte)((channel << 2) + (byte)parameter);
             return GetMemory(address);
         }
 
-        public void SetMemory(byte address, uint Data)
+        public void SetMemory(byte address, uint data)
         {
-            byte[] WriteBuffer = new byte[6];
-            WriteBuffer[0] = (byte)Cmd.CmdRamWrite; //Operand
-            WriteBuffer[1] = address; //Operand
-            WriteBuffer[2] = (byte)(Data >> 24 & 0xFF);
-            WriteBuffer[3] = (byte)(Data >> 16 & 0xFF);
-            WriteBuffer[4] = (byte)(Data >> 8 & 0xFF);
-            WriteBuffer[5] = (byte)(Data & 0xFF);
-            Spi.Write(WriteBuffer);
+            byte[] txBuffer = new byte[6];
+            txBuffer[0] = (byte)Command.RamWrite; //Operand
+            txBuffer[1] = address; //Operand
+            txBuffer[2] = (byte)(data >> 24 & 0xFF);
+            txBuffer[3] = (byte)(data >> 16 & 0xFF);
+            txBuffer[4] = (byte)(data >> 8 & 0xFF);
+            txBuffer[5] = (byte)(data & 0xFF);
+            spi.Write(txBuffer);
         }
 
-        public void SetTerminate(uint Data)
+        public void SetTerminate(uint data)
         {
-            byte[] WriteBuffer = new byte[6];
-            WriteBuffer[0] = (byte)Cmd.CmdSetTerminate; //Operand
-            WriteBuffer[1] = 0x00; //Operand
-            WriteBuffer[2] = (byte)(Data >> 24 & 0xFF);
-            WriteBuffer[3] = (byte)(Data >> 16 & 0xFF);
-            WriteBuffer[4] = (byte)(Data >> 8 & 0xFF);
-            WriteBuffer[5] = (byte)(Data & 0xFF);
-            Spi.Write(WriteBuffer);
+            byte[] txBuffer = new byte[6];
+            txBuffer[0] = (byte)Command.SetTerminate; //Operand
+            txBuffer[1] = 0x00; //Operand
+            txBuffer[2] = (byte)(data >> 24 & 0xFF);
+            txBuffer[3] = (byte)(data >> 16 & 0xFF);
+            txBuffer[4] = (byte)(data >> 8 & 0xFF);
+            txBuffer[5] = (byte)(data & 0xFF);
+            spi.Write(txBuffer);
         }
 
         public uint GetMemory(byte address)
         {
             uint RetVal;
-            var TxBuffer = new byte[6];
-            var RxBuffer = new byte[6];
-            TxBuffer[0] = (byte)Cmd.CmdRamRead;
-            TxBuffer[1] = address;
-            TxBuffer[2] = 0x00;
-            TxBuffer[3] = 0x00;
-            TxBuffer[4] = 0x00;
-            TxBuffer[5] = 0x00;
-            Spi.WriteRead(TxBuffer, RxBuffer);
-            RetVal = (uint)((RxBuffer[2] << 24) + (RxBuffer[3] << 16) + (RxBuffer[4] << 8) + (RxBuffer[5]));
+            var txBuffer = new byte[6];
+            var rxBuffer = new byte[6];
+            txBuffer[0] = (byte)Command.RamRead;
+            txBuffer[1] = address;
+            txBuffer[2] = 0x00;
+            txBuffer[3] = 0x00;
+            txBuffer[4] = 0x00;
+            txBuffer[5] = 0x00;
+            spi.WriteRead(txBuffer, rxBuffer);
+            RetVal = (uint)((rxBuffer[2] << 24) + (rxBuffer[3] << 16) + (rxBuffer[4] << 8) + (rxBuffer[5]));
             return RetVal;
         }
     }
