@@ -31,16 +31,16 @@ namespace UberShield.Cores
         };
         public enum PinType : byte
         {
-            PinInput = 0,
-            PinOutput = 1,
-            PinPwm = 2,
-            PinInvertedPwm = 3
+            Input = 0,
+            Output = 1,
+            Pwm = 2,
+            InvertedPwm = 3
         };
         public enum PwmParameter : byte
         {
-            PwmRise = 0,
-            PwmFall = 1,
-            PwmPeriod = 2
+            Rise = 0,
+            Fall = 1,
+            Period = 2
         };
         public enum PinGroup : byte
         {
@@ -117,16 +117,16 @@ namespace UberShield.Cores
             byte[] txBuffer = new byte[2];
             switch (type)
             {
-                case PinType.PinInput:
+                case PinType.Input:
                     txBuffer[0] = (byte)Command.SetPinInput;
                     break;
-                case PinType.PinOutput:
+                case PinType.Output:
                     txBuffer[0] = (byte)Command.SetPinOutput;
                     break;
-                case PinType.PinPwm:
+                case PinType.Pwm:
                     txBuffer[0] = (byte)Command.CmdSetPinPwm;
                     break;
-                case PinType.PinInvertedPwm:
+                case PinType.InvertedPwm:
                     txBuffer[0] = (byte)Command.SetPinInvertedPwm;
                     break;
                 default:
@@ -186,7 +186,6 @@ namespace UberShield.Cores
         public void SetGroupPin(PinGroup group, uint state)
         {
             byte readCommand;
-            uint RetVal;
             var txBuffer = new byte[6];
             var rxBuffer = new byte[6];
             if (group==PinGroup.Lower)
