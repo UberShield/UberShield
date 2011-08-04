@@ -151,6 +151,21 @@ namespace UberShield.Cores
             txBuffer[1] = 0x00; //Operand
             spi.Write(txBuffer);
         }
+        public uint GetTerminate()
+        {
+            uint RetVal;
+            var txBuffer = new byte[6];
+            var rxBuffer = new byte[6];
+            txBuffer[0] = (byte)GpioPwm.Command.GetTerminate;
+            txBuffer[1] = 0x00;
+            txBuffer[2] = 0x00;
+            txBuffer[3] = 0x00;
+            txBuffer[4] = 0x00;
+            txBuffer[5] = 0x00;
+            spi.WriteRead(txBuffer, rxBuffer);
+            RetVal = (uint)((rxBuffer[2] << 24) + (rxBuffer[3] << 16) + (rxBuffer[4] << 8) + (rxBuffer[5]));
+            return RetVal;
+        }
 
         public void SetPin(byte pin, bool state)
         {
@@ -202,6 +217,20 @@ namespace UberShield.Cores
             txBuffer[4] = (byte)(state >> 8 & 0xFF);
             txBuffer[5] = (byte)(state & 0xFF);
             spi.Write(txBuffer);
+        }
+
+        public GpioPwm.PinType GetPinType(byte pin)
+        {
+            byte[] txBuffer = new byte[6];
+            var rxBuffer = new byte[6];
+            txBuffer[0] = (byte)Command.GetPinMode;
+            txBuffer[1] = pin;
+            txBuffer[2] = 0x00;
+            txBuffer[3] = 0x00;
+            txBuffer[4] = 0x00;
+            txBuffer[5] = 0x00;
+            spi.WriteRead(txBuffer, rxBuffer);
+            return (GpioPwm.PinType)rxBuffer[5];
         }
 
         public uint GetGroupPinState(PinGroup group)
