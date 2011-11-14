@@ -76,8 +76,8 @@ namespace SendBitstream
             using (var inputStream = GetFileOrUrlStream(args[0]))
             {
                 IEnumerable pageEnumerable = IsBitFile(args[0]) ?
-                    (IEnumerable) new BitFilePageCollection(inputStream, Constants.BootloaderStartAddress) :
-                    (IEnumerable) new BinFilePageCollection(inputStream, Constants.BootloaderStartAddress);
+                    (IEnumerable) new BitFilePageCollection(inputStream, Constants.UserStartAddress) :
+                    (IEnumerable) new BinFilePageCollection(inputStream, Constants.UserStartAddress);
                 arduinoConnection.UploadPages(pageEnumerable);
             }
         }
